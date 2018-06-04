@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * @file
+ * Contains event_subscriber.module.
+ */
+
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\node\NodeTypeInterface;
+/**
+ * Implements hook_help().
+ */
+function event_subscriber_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the event_subscriber module.
+    case 'help.page.event_subscriber':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('JBI Exercise') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Helper function add date in content type
+ * @param \Drupal\node\NodeTypeInterface $type
+ * A node type object.
+ * @param string $label
+ *   (optional) The label for the field instance.
+ *
+ * @return \Drupal\field\Entity\FieldConfig
+ *   A Date field object.
+ */
+function event_subscriber_add_date_field(NodeTypeInterface $type, $label = 'Date') {
+  $field_storage = FieldStorageConfig::loadByName('node', 'event_date');
+  if (empty($field_storage)) {
+    $config = [
+      'field_name' => 'event_date',
+      'entity_type' => 'node',
+      'type' => 'datetime',
+      'settings' => [
+        'datetime_type' => 'datetime'
+      ]
+    ];
+   $field_storage = FieldStorageConfig::create($config)->save();
+  }
+  $bundle = $type->get('type');
+  $field = [
+    'field_name' => 'event_date',
+    'entity_type' => 'node',
+    'bundle' => $bundle,
+    'label' => $label,
+  ];
+  FieldConfig::create($field)->save();
+  // Assign widget settings for the 'default' form mode.
+  entity_get_form_display('node', $type->id(), 'default')
+     ->setComponent('event_date', array(
+       'type' => 'datetime_datelist',
+     ))
+     ->save();
+   // Assign display settings for the 'default' and 'teaser' view modes.
+   entity_get_display('node', $type->id(), 'default')
+     ->setComponent('event_date', array(
+       'label' => 'hidden',
+       'type' => 'datetime_default',
+     ))
+     ->save();
+}
+
+/**
+ * Add Taxonomy to Event
+ *
+ **/
+function event_subscriber_add_category_field(NodeTypeInterface $type, $label = 'Event Category') {
+
+  $vocabulary = Vocabulary::create([
+    'vid' => 'event_category',
+    'description' => 'Category Name of Event',
+    'name' => $label,
+  ]);
+  $vocabulary->save();
+  $field_storage = FieldStorageConfig::loadByName('node', 'event_category');
+  if (!$field_storage) {
+    $config = [
+      'field_name' => 'event_category',
+      'entity_type' => 'node',
+      'type' => 'entity_reference',
+      'settings' => [
+        'target_type' => 'taxonomy_term'
+      ]
+    ];
+  $field_storage =  FieldStorageConfig::create($config)->save();
+  }
+
+  $field = [
+    'field_name' => 'event_category',
+    'entity_type' => 'node',
+    'bundle' => $type->get('type'),
+    'label' => $label,
+    'required' => TRUE,
+    'settings' => [
+        'handler' => 'default',
+        'handler_settings' => [
+          'target_bundles' => ['event_category'],
+        ]
+      ],
+    ];
+  FieldConfig::create($field)->save();
+
+  entity_get_form_display('node', $type->id(), 'default')
+     ->setComponent('event_category', array(
+       'type' => 'entity_reference_autocomplete',
+     ))
+     ->save();
+   // Assign display settings for the 'default' and 'teaser' view modes.
+   entity_get_display('node', $type->id(), 'default')
+     ->setComponent('event_category', array(
+       'label' => 'hidden',
+       'type' => 'entity_reference_label',
+     ))
+     ->save();
+}

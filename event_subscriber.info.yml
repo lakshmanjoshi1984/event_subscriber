@@ -1,0 +1,9 @@
+name: 'Event Subscriber'
+type: module
+description: 'JBI Exercise'
+core: 8.x
+package: 'JBI'
+dependencies:
+  - flag
+  - views
+  - features

@@ -1,0 +1,50 @@
+<?php
+
+use Drupal\node\Entity\NodeType;
+use Drupal\flag\Entity\Flag;
+use Drupal\taxonomy\Entity\Vocabulary;
+/**
+ * Implements hook_install().
+ */
+function event_subscriber_install() {
+  //create event type by programatically.
+  //However we can create by Drupal yml file also and it is easy to implement
+  $value = [
+    'type' => 'event_subscriber',
+    'name' => 'Event Subscriber',
+    'description' => 'User can add Event and also subscribe',
+    'new_revision' => TRUE,
+    'status' => TRUE
+  ];
+ $event = NodeType::create($value);
+ $event->save();
+ //add custom filed and attach the Flag with content
+
+ $flag_values = [
+   'entity_type' => 'node',
+   'global' => true,
+   'bundles' => ['event_subscriber'],
+   'flag_short' => 'Subscribe',
+   'unflag_short' => 'Unsubscribe',
+   'flag_type' => 'entity:node',
+   'link_type' => 'ajax_link',
+   'id' => 'event',
+   'label' => 'Event Suscrible'
+ ];
+ $flag = Flag::create($flag_values);
+ $flag->save();
+ //
+ // //add two filed in this content type body and date
+ node_add_body_field($event, 'Body');
+ event_subscriber_add_date_field($event, 'Event Date');
+ event_subscriber_add_category_field($event, 'Event Category');
+
+}
+
+function event_subscriber_uninstall() {
+  //delete types
+  NodeType::load('event_subscriber')->delete();
+  Flag::load('event')->delete();
+  Vocabulary::load('event_category')->delete();
+
+}
